@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
 import os
@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, template_folder='template', static_folder='template')
 CORS(app)
 
 api_key = os.getenv("API_KEY")
@@ -15,7 +15,6 @@ genai.configure(api_key=api_key)
 # Define the model
 model = genai.GenerativeModel('gemini-2.0-flash')
 
-# Enhanced system instruction with strict formatting
 system_instruction = """
 You are Gardner Chatbot that provides information exclusively about Gardner College Diliman.
 Your responses MUST include the following contact information when relevant to the query:
@@ -27,7 +26,6 @@ for more Information contact us:
 - Working Hours: 8 AM - 5 PM Mon - Sat
 - Website: gardner.edu.ph
 - Email: marketing_diliman@gardner.edu.ph
-
 
 Strands and Tracks Offered:
 
@@ -97,7 +95,6 @@ Chief Marketing Officer
 12. When asked about queries unrelated to the university, acknowledge the user's prompt before you respond in a manner that you are only designated to answer inquiries about Gardner College Diliman. Instead, provide a polite response indicating that you cannot assist with that topic but are happy to help with any inquiries related to Gardner College Diliman.
 """
 
-# Initialize conversation with system instruction
 conversation_history = [
     {"role": "user", "parts": ["Act as Gardner College Chatbot"]},
     {"role": "model", "parts": [f"I am the Gardner College Chatbot. {system_instruction}"]},
@@ -105,7 +102,7 @@ conversation_history = [
 
 @app.route('/')
 def home():
-    return "Welcome to Gardner College Chatbot!"
+    return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -114,15 +111,13 @@ def chat():
     if user_input.lower() in ["exit", "quit", "bye"]:
         return jsonify({"response": "Goodbye! Have a great day!"})
 
-    # Add user input to conversation history
     conversation_history.append({"role": "user", "parts": [user_input]})
 
     try:
-        # Generate response with strict configuration
         response = model.generate_content(
             contents=conversation_history,
             generation_config={
-                "temperature": 0.3,  # Lower temperature for more focused responses
+                "temperature": 0.3,
                 "top_p": 0.7,
                 "top_k": 20,
                 "max_output_tokens": 1024,
@@ -136,26 +131,12 @@ def chat():
         )
 
         model_response = response.text
-
-        # Post-process to ensure contact info is included when relevant
-        # if any(keyword in user_input.lower() for keyword in ['contact', 'email', 'facebook', 'number', 'address', 'reach', 'connect']):
-        #     if "Facebook:" not in model_response:
-        #         model_response += "\n\n=== Contact Information ===\n" + \
-        #                         "Facebook: https://www.facebook.com/gardnerdiliman\n" + \
-        #                         "Contact Number: 0917 837 9209\n" + \
-        #                         "Address: 29 North Avenue, North EDSA Diliman, Quezon City, Philippines\n" + \
-        #                         "Working Hours: 8 AM - 5 PM Mon - Sat\n" + \
-        #                         "Website: gardner.edu.ph\n" + \
-        #                         "Email: marketing_diliman@gardner.edu.ph"
-
         conversation_history.append({"role": "model", "parts": [model_response]})
         return jsonify({"response": model_response})
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"response": "Sorry, I encountered an error. Please try again."})
-    
-    
 
 if __name__ == "__main__":
     app.run(debug=True)
