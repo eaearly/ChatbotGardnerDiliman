@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, url_for
 from flask_cors import CORS
 import google.generativeai as genai
 import os
@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__, template_folder='template', static_folder='template')
+app = Flask(__name__, template_folder='template', static_folder='static')
 CORS(app)
 
 api_key = os.getenv("API_KEY")
