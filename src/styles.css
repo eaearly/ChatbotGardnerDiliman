@@ -138,7 +138,7 @@ body {
     width: 30px;
     height: 30px;
     /* background-color: #99104e; */
-    background-image: url("../images/garder.png");
+    background-image: url("../src/images/garder.png");
     background-size: 50px;
     background-position: center;
     background-repeat: no-repeat;
